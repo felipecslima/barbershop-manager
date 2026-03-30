@@ -16,7 +16,12 @@
     "moduleResolution": "bundler",
     "importHelpers": true,
     "target": "ES2022",
-    "module": "ES2022"
+    "module": "ES2022",
+    "baseUrl": "./src",
+    "paths": {
+      "@ngx-formly/core": ["app/vendor/formly/index.ts"],
+      "@supabase/supabase-js": ["app/vendor/supabase/index.ts"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
