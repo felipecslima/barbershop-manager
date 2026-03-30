@@ -94,7 +94,7 @@ export class UsersComponent {
         .select('id, user_id, status, role_id, profiles(email, full_name)')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false }),
-      this.supabaseService.client.from('roles').select('id, name').order('name'),
+      this.supabaseService.client.from('roles').select('id, name').order('name', { ascending: true }),
     ]);
 
     const firstError = membershipResult.error ?? rolesResult.error;

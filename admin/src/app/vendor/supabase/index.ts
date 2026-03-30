@@ -76,6 +76,10 @@ class SupabaseAuthClient {
     return { data: { session: this.session } };
   }
 
+  async getUser(): Promise<{ data: { user: User | null } }> {
+    return { data: { user: this.session?.user ?? null } };
+  }
+
   get accessToken(): string | null {
     return this.session?.access_token ?? null;
   }
@@ -91,16 +95,21 @@ class QueryBuilder {
   private selected = '*';
   private filters: Array<[string, string]> = [];
   private orderBy: { column: string; ascending: boolean } | null = null;
+  private shouldSingle = false;
+  private selectOptions: { count?: 'exact'; head?: boolean } | undefined;
+  private mutationMethod: 'PATCH' | 'DELETE' | null = null;
+  private mutationBody: Record<string, unknown> | null = null;
 
   constructor(
     private readonly url: string,
     private readonly anonKey: string,
     private readonly accessToken: string | null,
-    private readonly table: string
+    private readonly table: string,
   ) {}
 
-  select(columns: string): this {
+  select(columns: string, options?: { count?: 'exact'; head?: boolean }): this {
     this.selected = columns;
+    this.selectOptions = options;
     return this;
   }
 
@@ -114,18 +123,37 @@ class QueryBuilder {
     return this;
   }
 
-  async insert(values: Record<string, unknown>): Promise<{ data: unknown; error: AuthError | null }> {
-    return this.execute('POST', values);
+  single(): this {
+    this.shouldSingle = true;
+    return this;
+  }
+
+  update(values: Record<string, unknown>): this {
+    this.mutationMethod = 'PATCH';
+    this.mutationBody = values;
+    return this;
+  }
+
+  delete(): this {
+    this.mutationMethod = 'DELETE';
+    this.mutationBody = null;
+    return this;
+  }
+
+  async insert(values: Record<string, unknown> | Record<string, unknown>[]): Promise<{ data: unknown; error: AuthError | null }> {
+    const result = await this.execute('POST', values);
+    return { data: result.data, error: result.error };
   }
 
   then<TResult1 = any, TResult2 = never>(
-    onfulfilled?: ((value: { data: any; error: AuthError | null }) => TResult1 | PromiseLike<TResult1>) | null,
-    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
+    onfulfilled?: ((value: { data: any; error: AuthError | null; count?: number | null }) => TResult1 | PromiseLike<TResult1>) | null,
+    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
   ): Promise<TResult1 | TResult2> {
-    return this.execute().then(onfulfilled, onrejected);
+    const method = this.mutationMethod ?? 'GET';
+    return this.execute(method, this.mutationBody ?? undefined).then(onfulfilled, onrejected);
   }
 
-  private async execute(method: 'GET' | 'POST' = 'GET', body?: unknown): Promise<{ data: any; error: AuthError | null }> {
+  private async execute(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', body?: unknown): Promise<{ data: any; error: AuthError | null; count?: number | null }> {
     const params = new URLSearchParams();
     params.set('select', this.selected);
     for (const [column, value] of this.filters) params.set(column, value);
@@ -138,9 +166,9 @@ class QueryBuilder {
           apikey: this.anonKey,
           Authorization: `Bearer ${this.accessToken ?? ''}`,
           'Content-Type': 'application/json',
-          Prefer: 'return=representation',
+          Prefer: this.selectOptions?.count === 'exact' ? 'count=exact,return=representation' : 'return=representation',
         },
-        body: method === 'POST' ? JSON.stringify(body) : undefined,
+        body: method === 'POST' || method === 'PATCH' ? JSON.stringify(body) : undefined,
       });
 
       const payload = await response.json().catch(() => null);
@@ -148,7 +176,11 @@ class QueryBuilder {
         return { data: null, error: { message: payload?.message ?? 'Request failed' } };
       }
 
-      return { data: payload, error: null };
+      const contentRange = response.headers.get('content-range');
+      const count = contentRange?.includes('/') ? Number(contentRange.split('/')[1]) : null;
+      const data = this.shouldSingle && Array.isArray(payload) ? payload[0] ?? null : payload;
+
+      return { data, error: null, count };
     } catch {
       return { data: null, error: { message: 'Network error while querying Supabase' } };
     }

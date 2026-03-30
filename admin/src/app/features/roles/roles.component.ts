@@ -80,8 +80,8 @@ export class RolesComponent {
 
   async loadData(): Promise<void> {
     const [rolesResult, permissionsResult, rolePermissionsResult] = await Promise.all([
-      this.supabaseService.client.from('roles').select('id, name, description').order('name'),
-      this.supabaseService.client.from('permissions').select('id, name').order('name'),
+      this.supabaseService.client.from('roles').select('id, name, description').order('name', { ascending: true }),
+      this.supabaseService.client.from('permissions').select('id, name').order('name', { ascending: true }),
       this.supabaseService.client.from('role_permissions').select('role_id, permission_id'),
     ]);
 
