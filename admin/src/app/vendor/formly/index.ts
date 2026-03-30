@@ -34,7 +34,7 @@ export class FormlyAttributesDirective {
 
 @Directive()
 export abstract class FieldType {
-  @Input() formControl: FormControl = new FormControl('');
+  @Input()  formControl: FormControl = new FormControl('');
   @Input() field: FormlyFieldConfig = {};
   get props(): FormlyFieldProps {
     return this.field.props ?? {};
