@@ -18,107 +18,133 @@ import { VideosComponent } from './pages/ui-elements/videos/videos.component';
 import { SignInComponent } from './pages/auth-pages/sign-in/sign-in.component';
 import { SignUpComponent } from './pages/auth-pages/sign-up/sign-up.component';
 import { CalenderComponent } from './pages/calender/calender.component';
+import { authGuard } from './core/guards/auth.guard';
+import { roleGuard } from './core/guards/role.guard';
+import { ProjectsListComponent } from './features/projects/projects-list.component';
+import { ProjectsCreateComponent } from './features/projects/projects-create.component';
 
 export const routes: Routes = [
   {
-    path:'',
-    component:AppLayoutComponent,
-    children:[
+    path: '',
+    component: AppLayoutComponent,
+    children: [
       {
         path: '',
         component: EcommerceComponent,
         pathMatch: 'full',
+        canActivate: [authGuard],
         title:
           'Angular Ecommerce Dashboard | TailAdmin - Angular Admin Dashboard Template',
       },
       {
-        path:'calendar',
-        component:CalenderComponent,
-        title:'Angular Calender | TailAdmin - Angular Admin Dashboard Template'
+        path: 'projects',
+        component: ProjectsListComponent,
+        canActivate: [authGuard, roleGuard],
+        data: { permission: 'projects.read' },
+        title: 'Projects | TailAdmin SaaS Starter',
       },
       {
-        path:'profile',
-        component:ProfileComponent,
-        title:'Angular Profile Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        path: 'projects/create',
+        component: ProjectsCreateComponent,
+        canActivate: [authGuard, roleGuard],
+        data: { permission: 'projects.create' },
+        title: 'Create Project | TailAdmin SaaS Starter',
       },
       {
-        path:'form-elements',
-        component:FormElementsComponent,
-        title:'Angular Form Elements Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        path: 'calendar',
+        component: CalenderComponent,
+        title: 'Angular Calender | TailAdmin - Angular Admin Dashboard Template'
       },
       {
-        path:'basic-tables',
-        component:BasicTablesComponent,
-        title:'Angular Basic Tables Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        path: 'profile',
+        component: ProfileComponent,
+        title: 'Angular Profile Dashboard | TailAdmin - Angular Admin Dashboard Template'
       },
       {
-        path:'blank',
-        component:BlankComponent,
-        title:'Angular Blank Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      // support tickets
-      {
-        path:'invoice',
-        component:InvoicesComponent,
-        title:'Angular Invoice Details Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        path: 'form-elements',
+        component: FormElementsComponent,
+        title: 'Angular Form Elements Dashboard | TailAdmin - Angular Admin Dashboard Template'
       },
       {
-        path:'line-chart',
-        component:LineChartComponent,
-        title:'Angular Line Chart Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        path: 'basic-tables',
+        component: BasicTablesComponent,
+        title: 'Angular Basic Tables Dashboard | TailAdmin - Angular Admin Dashboard Template'
       },
       {
-        path:'bar-chart',
-        component:BarChartComponent,
-        title:'Angular Bar Chart Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        path: 'blank',
+        component: BlankComponent,
+        title: 'Angular Blank Dashboard | TailAdmin - Angular Admin Dashboard Template'
       },
       {
-        path:'alerts',
-        component:AlertsComponent,
-        title:'Angular Alerts Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        path: 'invoice',
+        component: InvoicesComponent,
+        title: 'Angular Invoice Details Dashboard | TailAdmin - Angular Admin Dashboard Template'
       },
       {
-        path:'avatars',
-        component:AvatarElementComponent,
-        title:'Angular Avatars Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        path: 'line-chart',
+        component: LineChartComponent,
+        title: 'Angular Line Chart Dashboard | TailAdmin - Angular Admin Dashboard Template'
       },
       {
-        path:'badge',
-        component:BadgesComponent,
-        title:'Angular Badges Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        path: 'bar-chart',
+        component: BarChartComponent,
+        title: 'Angular Bar Chart Dashboard | TailAdmin - Angular Admin Dashboard Template'
       },
       {
-        path:'buttons',
-        component:ButtonsComponent,
-        title:'Angular Buttons Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        path: 'alerts',
+        component: AlertsComponent,
+        title: 'Angular Alerts Dashboard | TailAdmin - Angular Admin Dashboard Template'
       },
       {
-        path:'images',
-        component:ImagesComponent,
-        title:'Angular Images Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        path: 'avatars',
+        component: AvatarElementComponent,
+        title: 'Angular Avatars Dashboard | TailAdmin - Angular Admin Dashboard Template'
       },
       {
-        path:'videos',
-        component:VideosComponent,
-        title:'Angular Videos Dashboard | TailAdmin - Angular Admin Dashboard Template'
+        path: 'badge',
+        component: BadgesComponent,
+        title: 'Angular Badges Dashboard | TailAdmin - Angular Admin Dashboard Template'
+      },
+      {
+        path: 'buttons',
+        component: ButtonsComponent,
+        title: 'Angular Buttons Dashboard | TailAdmin - Angular Admin Dashboard Template'
+      },
+      {
+        path: 'images',
+        component: ImagesComponent,
+        title: 'Angular Images Dashboard | TailAdmin - Angular Admin Dashboard Template'
+      },
+      {
+        path: 'videos',
+        component: VideosComponent,
+        title: 'Angular Videos Dashboard | TailAdmin - Angular Admin Dashboard Template'
+      },
+      {
+        path: 'examples/forms',
+        component: FormElementsComponent,
+        title: 'Examples - Form Elements | TailAdmin'
+      },
+      {
+        path: 'examples/tables',
+        component: BasicTablesComponent,
+        title: 'Examples - Tables | TailAdmin'
       },
     ]
   },
-  // auth pages
   {
-    path:'signin',
-    component:SignInComponent,
-    title:'Angular Sign In Dashboard | TailAdmin - Angular Admin Dashboard Template'
+    path: 'signin',
+    component: SignInComponent,
+    title: 'Angular Sign In Dashboard | TailAdmin - Angular Admin Dashboard Template'
   },
   {
-    path:'signup',
-    component:SignUpComponent,
-    title:'Angular Sign Up Dashboard | TailAdmin - Angular Admin Dashboard Template'
+    path: 'signup',
+    component: SignUpComponent,
+    title: 'Angular Sign Up Dashboard | TailAdmin - Angular Admin Dashboard Template'
   },
-  // error pages
   {
-    path:'**',
-    component:NotFoundComponent,
-    title:'Angular NotFound Dashboard | TailAdmin - Angular Admin Dashboard Template'
+    path: '**',
+    component: NotFoundComponent,
+    title: 'Angular NotFound Dashboard | TailAdmin - Angular Admin Dashboard Template'
   },
 ];
