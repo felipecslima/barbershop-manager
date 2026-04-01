@@ -20,7 +20,9 @@
     "baseUrl": "./src",
     "paths": {
       "@ngx-formly/core": ["app/vendor/formly/index.ts"],
-      "@supabase/supabase-js": ["app/vendor/supabase/index.ts"]
+      "@supabase/supabase-js": ["app/vendor/supabase/index.ts"],
+      "@core/*": ["app/core/*"],
+      "@shared/*": ["app/shared/*"]
     }
   },
   "angularCompilerOptions": {

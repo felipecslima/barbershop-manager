@@ -5,7 +5,8 @@ import { Router } from '@angular/router';
 import { FormlyFieldConfig } from '@ngx-formly/core';
 import { DynamicFormComponent } from '../../shared/formly/dynamic-form.component';
 import { OrganizationService } from '../../core/services/organization.service';
-import { SupabaseService } from '../../core/services/supabase.service';
+import { ProjectRepository } from '@core/repositories/project.repository';
+import { AuthService } from '@core/auth/auth.service';
 
 @Component({
   selector: 'app-projects-form',
@@ -31,8 +32,9 @@ import { SupabaseService } from '../../core/services/supabase.service';
   `,
 })
 export class ProjectsFormComponent {
-  private readonly supabaseService = inject(SupabaseService);
+  private readonly projectRepo = inject(ProjectRepository);
   private readonly organizationService = inject(OrganizationService);
+  private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
   readonly projectId = input<string | null>(null);
@@ -61,19 +63,13 @@ export class ProjectsFormComponent {
   }
 
   private async loadProject(projectId: string): Promise<void> {
-    const { data, error } = await this.supabaseService.client
-      .from('projects')
-      .select('id, name, description')
-      .eq('id', projectId)
-      .single();
-
-    if (error) {
-      this.error.set(error.message);
-      return;
+    try {
+      const project = await this.projectRepo.getById(projectId);
+      this.model.name = project.name;
+      this.model.description = project.description ?? '';
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Erro ao carregar projeto.');
     }
-
-    this.model.name = data.name;
-    this.model.description = data.description ?? '';
   }
 
   async saveProject(): Promise<void> {
@@ -82,39 +78,37 @@ export class ProjectsFormComponent {
 
     const organizationId = this.organizationService.currentOrganizationId();
     if (!organizationId) {
-      this.error.set('Select an organization before saving projects.');
+      this.error.set('Selecione uma organização antes de salvar projetos.');
       this.loading.set(false);
       return;
     }
 
-    const {
-      data: { user },
-    } = await this.supabaseService.client.auth.getUser();
-
+    const user = this.authService.user();
     if (!user) {
-      this.error.set('You must be signed in.');
+      this.error.set('Você precisa estar autenticado.');
       this.loading.set(false);
       return;
     }
 
-    const payload = {
-      name: this.model.name,
-      description: this.model.description,
-      organization_id: organizationId,
-      owner_id: user.id,
-    };
-
-    const { error } = this.projectId()
-      ? await this.supabaseService.client.from('projects').update(payload).eq('id', this.projectId()!)
-      : await this.supabaseService.client.from('projects').insert(payload);
-
-    if (error) {
-      this.error.set(error.message);
+    try {
+      if (this.projectId()) {
+        await this.projectRepo.update(this.projectId()!, {
+          name: this.model.name,
+          description: this.model.description,
+        });
+      } else {
+        await this.projectRepo.create({
+          name: this.model.name!,
+          description: this.model.description,
+          organization_id: organizationId,
+          owner_id: user.id,
+        });
+      }
+      await this.router.navigateByUrl('/projects');
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Erro ao salvar projeto.');
+    } finally {
       this.loading.set(false);
-      return;
     }
-
-    this.loading.set(false);
-    await this.router.navigateByUrl('/projects');
   }
 }

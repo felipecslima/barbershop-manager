@@ -1,14 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { SupabaseService } from '../../core/services/supabase.service';
+import { ProjectRepository } from '@core/repositories/project.repository';
 import { OrganizationService } from '../../core/services/organization.service';
-
-interface Project {
-  id: string;
-  name: string;
-  description: string | null;
-}
+import { Project } from '@shared/models/project.model';
 
 @Component({
   selector: 'app-projects-list',
@@ -54,7 +49,7 @@ interface Project {
   `,
 })
 export class ProjectsListComponent {
-  private readonly supabaseService = inject(SupabaseService);
+  private readonly projectRepo = inject(ProjectRepository);
   private readonly organizationService = inject(OrganizationService);
 
   readonly projects = signal<Project[]>([]);
@@ -63,38 +58,26 @@ export class ProjectsListComponent {
 
   constructor() {
     effect(() => {
-      const organizationId = this.organizationId();
-      if (organizationId) {
-        void this.loadProjects(organizationId);
-      }
+      const orgId = this.organizationId();
+      if (orgId) void this.loadProjects(orgId);
     });
   }
 
   async loadProjects(organizationId: string): Promise<void> {
-    const { data, error } = await this.supabaseService.client
-      .from('projects')
-      .select('id, name, description')
-      .eq('organization_id', organizationId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      this.error.set(error.message);
-      return;
+    try {
+      this.projects.set(await this.projectRepo.getByOrg(organizationId));
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Erro ao carregar projetos.');
     }
-
-    this.projects.set((data as Project[]) ?? []);
   }
 
   async deleteProject(projectId: string): Promise<void> {
-    const { error } = await this.supabaseService.client.from('projects').delete().eq('id', projectId);
-    if (error) {
-      this.error.set(error.message);
-      return;
-    }
-
-    const organizationId = this.organizationId();
-    if (organizationId) {
-      await this.loadProjects(organizationId);
+    try {
+      await this.projectRepo.delete(projectId);
+      const orgId = this.organizationId();
+      if (orgId) await this.loadProjects(orgId);
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Erro ao remover projeto.');
     }
   }
 }

@@ -1,11 +1,2 @@
-import { Injectable } from '@angular/core';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { environment } from '../../../environments/environment';
-
-@Injectable({ providedIn: 'root' })
-export class SupabaseService {
-  readonly client: SupabaseClient = createClient(
-    environment.supabaseUrl,
-    environment.supabaseAnonKey
-  );
-}
+// Re-export do novo local — mantém compatibilidade com imports existentes
+export { SupabaseService } from '@core/supabase/supabase.service';

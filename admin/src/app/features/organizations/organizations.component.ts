@@ -1,13 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { SupabaseService } from '../../core/services/supabase.service';
-
-interface OrganizationRow {
-  id: string;
-  name: string;
-  slug: string;
-}
+import { OrgRepository } from '@core/repositories/org.repository';
+import { AuthService } from '@core/auth/auth.service';
+import { Org } from '@shared/models/org.model';
 
 @Component({
   selector: 'app-organizations',
@@ -23,12 +19,26 @@ interface OrganizationRow {
         </div>
       }
 
-      <form class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/5 md:grid-cols-3" (ngSubmit)="saveOrganization()">
-        <input class="rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700 dark:bg-transparent" placeholder="Organization name" [(ngModel)]="form.name" name="name" required />
-        <input class="rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700 dark:bg-transparent" placeholder="Slug" [(ngModel)]="form.slug" name="slug" required />
-        <button class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600" type="submit">
-          {{ editingId() ? 'Update' : 'Create' }}
-        </button>
+      <form class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/5" (ngSubmit)="saveOrganization()">
+        <div class="grid gap-3 md:grid-cols-3">
+          <div class="md:col-span-2 space-y-1">
+            <input
+              class="w-full rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-700 dark:bg-transparent"
+              placeholder="Organization name"
+              [(ngModel)]="form.name"
+              name="name"
+              required
+              (ngModelChange)="onNameChange($event)"
+            />
+            <p class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+              <span>Slug:</span>
+              <span class="font-mono text-gray-600 dark:text-gray-300">{{ form.slug || '—' }}</span>
+            </p>
+          </div>
+          <button class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600" type="submit">
+            {{ editingId() ? 'Update' : 'Create' }}
+          </button>
+        </div>
       </form>
 
       <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/5">
@@ -60,9 +70,10 @@ interface OrganizationRow {
   `,
 })
 export class OrganizationsComponent {
-  private readonly supabaseService = inject(SupabaseService);
+  private readonly orgRepo = inject(OrgRepository);
+  private readonly authService = inject(AuthService);
 
-  readonly organizations = signal<OrganizationRow[]>([]);
+  readonly organizations = signal<Org[]>([]);
   readonly error = signal<string | null>(null);
   readonly editingId = signal<string | null>(null);
   readonly form: { name: string; slug: string } = { name: '', slug: '' };
@@ -72,75 +83,67 @@ export class OrganizationsComponent {
   }
 
   async loadOrganizations(): Promise<void> {
-    const { data, error } = await this.supabaseService.client
-      .from('organizations')
-      .select('id, name, slug')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      this.error.set(error.message);
-      return;
+    try {
+      this.organizations.set(await this.orgRepo.getAll());
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Erro ao carregar organizações.');
     }
-
-    this.organizations.set((data as OrganizationRow[]) ?? []);
   }
 
-  editOrganization(organization: OrganizationRow): void {
-    this.editingId.set(organization.id);
-    this.form.name = organization.name;
-    this.form.slug = organization.slug;
+  onNameChange(name: string): void {
+    // Só auto-gera o slug se for criação (não edição)
+    if (!this.editingId()) {
+      this.form.slug = this.toSlug(name);
+    }
+  }
+
+  private toSlug(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')   // remove acentos
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')      // remove caracteres especiais
+      .replace(/\s+/g, '-')              // espaços → hífens
+      .replace(/-+/g, '-');              // hífens duplos → simples
+  }
+
+  editOrganization(org: Org): void {
+    this.editingId.set(org.id);
+    this.form.name = org.name;
+    this.form.slug = org.slug;
   }
 
   async saveOrganization(): Promise<void> {
     this.error.set(null);
-
-    if (this.editingId()) {
-      const { error } = await this.supabaseService.client
-        .from('organizations')
-        .update({ name: this.form.name, slug: this.form.slug })
-        .eq('id', this.editingId()!);
-
-      if (error) {
-        this.error.set(error.message);
-        return;
+    try {
+      if (this.editingId()) {
+        await this.orgRepo.update(this.editingId()!, { name: this.form.name, slug: this.form.slug });
+      } else {
+        const user = this.authService.user();
+        if (!user) {
+          this.error.set('Você precisa estar autenticado para criar organizações.');
+          return;
+        }
+        await this.orgRepo.create({ name: this.form.name, slug: this.form.slug, created_by: user.id });
       }
-    } else {
-      const {
-        data: { user },
-      } = await this.supabaseService.client.auth.getUser();
-
-      if (!user) {
-        this.error.set('You must be logged in to create organizations.');
-        return;
-      }
-
-      const { error } = await this.supabaseService.client.from('organizations').insert({
-        name: this.form.name,
-        slug: this.form.slug,
-        created_by: user.id,
-      });
-
-      if (error) {
-        this.error.set(error.message);
-        return;
-      }
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Erro ao salvar organização.');
+      return;
     }
-
     this.editingId.set(null);
     this.form.name = '';
     this.form.slug = '';
     await this.loadOrganizations();
   }
 
-  async deleteOrganization(organizationId: string): Promise<void> {
+  async deleteOrganization(id: string): Promise<void> {
     this.error.set(null);
-    const { error } = await this.supabaseService.client.from('organizations').delete().eq('id', organizationId);
-
-    if (error) {
-      this.error.set(error.message);
-      return;
+    try {
+      await this.orgRepo.delete(id);
+      await this.loadOrganizations();
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Erro ao remover organização.');
     }
-
-    await this.loadOrganizations();
   }
 }

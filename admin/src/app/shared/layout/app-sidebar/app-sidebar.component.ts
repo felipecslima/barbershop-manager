@@ -28,17 +28,6 @@ export class AppSidebarComponent {
     { name: 'Projects', path: '/projects', icon: '<span>📁</span>' },
   ];
 
-  othersItems: NavItem[] = [
-    {
-      name: 'Authentication',
-      icon: '<span>🔐</span>',
-      subItems: [
-        { name: 'Sign In', path: '/signin' },
-        { name: 'Sign Up', path: '/signup' },
-      ],
-    },
-  ];
-
   openSubmenu: string | null | number = null;
   subMenuHeights: { [key: string]: number } = {};
   @ViewChildren('subMenu') subMenuRefs!: QueryList<ElementRef>;
@@ -111,22 +100,8 @@ export class AppSidebarComponent {
     }).unsubscribe();
   }
 
-  private setActiveMenuFromRoute(currentUrl: string) {
-    this.othersItems.forEach((nav, i) => {
-      nav.subItems?.forEach((subItem) => {
-        if (currentUrl === subItem.path) {
-          const key = `others-${i}`;
-          this.openSubmenu = key;
-          setTimeout(() => {
-            const el = document.getElementById(key);
-            if (el) {
-              this.subMenuHeights[key] = el.scrollHeight;
-              this.cdr.detectChanges();
-            }
-          });
-        }
-      });
-    });
+  private setActiveMenuFromRoute(_currentUrl: string) {
+    // reservado para submenus futuros
   }
 
   onSubmenuClick() {

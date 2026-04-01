@@ -1,18 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { SupabaseService } from '../../core/services/supabase.service';
-
-interface RoleRow {
-  id: string;
-  name: string;
-  description: string | null;
-}
-
-interface PermissionRow {
-  id: string;
-  name: string;
-}
+import { RolesRepository, RoleRow, PermissionRow } from '@core/repositories/roles.repository';
 
 @Component({
   selector: 'app-roles',
@@ -65,7 +54,7 @@ interface PermissionRow {
   `,
 })
 export class RolesComponent {
-  private readonly supabaseService = inject(SupabaseService);
+  private readonly rolesRepo = inject(RolesRepository);
 
   readonly roles = signal<RoleRow[]>([]);
   readonly permissions = signal<PermissionRow[]>([]);
@@ -79,29 +68,25 @@ export class RolesComponent {
   }
 
   async loadData(): Promise<void> {
-    const [rolesResult, permissionsResult, rolePermissionsResult] = await Promise.all([
-      this.supabaseService.client.from('roles').select('id, name, description').order('name', { ascending: true }),
-      this.supabaseService.client.from('permissions').select('id, name').order('name', { ascending: true }),
-      this.supabaseService.client.from('role_permissions').select('role_id, permission_id'),
-    ]);
+    try {
+      const [roles, permissions, rolePermissions] = await Promise.all([
+        this.rolesRepo.getRoles(),
+        this.rolesRepo.getPermissions(),
+        this.rolesRepo.getRolePermissions(),
+      ]);
 
-    const firstError = rolesResult.error ?? permissionsResult.error ?? rolePermissionsResult.error;
-    if (firstError) {
-      this.error.set(firstError.message);
-      return;
+      const map: Record<string, Set<string>> = {};
+      rolePermissions.forEach((item) => {
+        if (!map[item.role_id]) map[item.role_id] = new Set<string>();
+        map[item.role_id].add(item.permission_id);
+      });
+
+      this.roles.set(roles);
+      this.permissions.set(permissions);
+      this.rolePermissionMap.set(map);
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Erro ao carregar dados.');
     }
-
-    const map: Record<string, Set<string>> = {};
-    (rolePermissionsResult.data ?? []).forEach((item: any) => {
-      if (!map[item.role_id]) {
-        map[item.role_id] = new Set<string>();
-      }
-      map[item.role_id].add(item.permission_id);
-    });
-
-    this.roles.set((rolesResult.data as RoleRow[]) ?? []);
-    this.permissions.set((permissionsResult.data as PermissionRow[]) ?? []);
-    this.rolePermissionMap.set(map);
   }
 
   hasPermission(roleId: string, permissionId: string): boolean {
@@ -116,28 +101,16 @@ export class RolesComponent {
 
   async saveRole(): Promise<void> {
     this.error.set(null);
-
-    if (this.editingRoleId()) {
-      const { error } = await this.supabaseService.client
-        .from('roles')
-        .update({ name: this.form.name, description: this.form.description })
-        .eq('id', this.editingRoleId()!);
-
-      if (error) {
-        this.error.set(error.message);
-        return;
+    try {
+      if (this.editingRoleId()) {
+        await this.rolesRepo.updateRole(this.editingRoleId()!, this.form.name, this.form.description);
+      } else {
+        await this.rolesRepo.createRole(this.form.name, this.form.description);
       }
-    } else {
-      const { error } = await this.supabaseService.client
-        .from('roles')
-        .insert({ name: this.form.name, description: this.form.description });
-
-      if (error) {
-        this.error.set(error.message);
-        return;
-      }
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Erro ao salvar role.');
+      return;
     }
-
     this.editingRoleId.set(null);
     this.form.name = '';
     this.form.description = '';
@@ -146,29 +119,25 @@ export class RolesComponent {
 
   async deleteRole(roleId: string): Promise<void> {
     this.error.set(null);
-    const { error } = await this.supabaseService.client.from('roles').delete().eq('id', roleId);
-
-    if (error) {
-      this.error.set(error.message);
-      return;
+    try {
+      await this.rolesRepo.deleteRole(roleId);
+      await this.loadData();
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Erro ao remover role.');
     }
-
-    await this.loadData();
   }
 
   async togglePermission(roleId: string, permissionId: string, checked: boolean): Promise<void> {
     this.error.set(null);
-
-    const query = this.supabaseService.client.from('role_permissions');
-    const { error } = checked
-      ? await query.insert({ role_id: roleId, permission_id: permissionId })
-      : await query.delete().eq('role_id', roleId).eq('permission_id', permissionId);
-
-    if (error) {
-      this.error.set(error.message);
-      return;
+    try {
+      if (checked) {
+        await this.rolesRepo.addPermission(roleId, permissionId);
+      } else {
+        await this.rolesRepo.removePermission(roleId, permissionId);
+      }
+      await this.loadData();
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Erro ao atualizar permissão.');
     }
-
-    await this.loadData();
   }
 }
