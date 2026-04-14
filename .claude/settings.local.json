@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /Users/felipelima/work/boilerplate-manager/admin/src/app/features/*/)",
+      "Bash(wc -l /Users/felipelima/work/boilerplate-manager/supabase/migrations/*.sql)",
+      "Bash(git -C /Users/felipelima/work/boilerplate-manager log --oneline -20)",
+      "Bash(git -C /Users/felipelima/work/boilerplate-manager log --all --oneline --decorate)",
+      "Bash(git -C /Users/felipelima/work/boilerplate-manager status)",
+      "Bash(git -C /Users/felipelima/work/boilerplate-manager diff --stat HEAD~5..HEAD)",
+      "Bash(grep -E \"CREATE TABLE\" /Users/felipelima/work/boilerplate-manager/supabase/migrations/*.sql)",
+      "Bash(ng build:*)"
+    ]
+  }
+}

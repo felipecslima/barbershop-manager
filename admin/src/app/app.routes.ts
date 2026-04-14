@@ -1,27 +1,19 @@
 import { Routes } from '@angular/router';
 import { EcommerceComponent } from './pages/dashboard/ecommerce/ecommerce.component';
-import { ProfileComponent } from './pages/profile/profile.component';
-import { FormElementsComponent } from './pages/forms/form-elements/form-elements.component';
-import { BasicTablesComponent } from './pages/tables/basic-tables/basic-tables.component';
-import { BlankComponent } from './pages/blank/blank.component';
 import { NotFoundComponent } from './pages/other-page/not-found/not-found.component';
 import { AppLayoutComponent } from './shared/layout/app-layout/app-layout.component';
-import { InvoicesComponent } from './pages/invoices/invoices.component';
-import { LineChartComponent } from './pages/charts/line-chart/line-chart.component';
-import { BarChartComponent } from './pages/charts/bar-chart/bar-chart.component';
-import { AlertsComponent } from './pages/ui-elements/alerts/alerts.component';
-import { AvatarElementComponent } from './pages/ui-elements/avatar-element/avatar-element.component';
-import { BadgesComponent } from './pages/ui-elements/badges/badges.component';
-import { ButtonsComponent } from './pages/ui-elements/buttons/buttons.component';
-import { ImagesComponent } from './pages/ui-elements/images/images.component';
-import { VideosComponent } from './pages/ui-elements/videos/videos.component';
 import { SignInComponent } from './pages/auth-pages/sign-in/sign-in.component';
 import { SignUpComponent } from './pages/auth-pages/sign-up/sign-up.component';
-import { CalenderComponent } from './pages/calender/calender.component';
-import { authGuard } from './core/guards/auth.guard';
-import { roleGuard } from './core/guards/role.guard';
+import { authGuard, publicGuard } from './core/guards/auth.guard';
 import { ProjectsListComponent } from './features/projects/projects-list.component';
 import { ProjectsCreateComponent } from './features/projects/projects-create.component';
+import { ProjectsEditComponent } from './features/projects/projects-edit.component';
+import { OrganizationsComponent } from './features/organizations/organizations.component';
+import { UsersComponent } from './features/users/users.component';
+import { RolesComponent } from './features/roles/roles.component';
+import { LoginComponent } from './features/auth/login/login.component';
+import { ForgotPasswordComponent } from './features/auth/forgot-password/forgot-password.component';
+import { ResetPasswordComponent } from './features/auth/reset-password/reset-password.component';
 
 export const routes: Routes = [
   {
@@ -33,118 +25,80 @@ export const routes: Routes = [
         component: EcommerceComponent,
         pathMatch: 'full',
         canActivate: [authGuard],
-        title:
-          'Angular Ecommerce Dashboard | TailAdmin - Angular Admin Dashboard Template',
+        title: 'Dashboard | Boilerplate Manager',
+      },
+      {
+        path: 'organizations',
+        component: OrganizationsComponent,
+        canActivate: [authGuard],
+        title: 'Organizations | Boilerplate Manager',
+      },
+      {
+        path: 'users',
+        component: UsersComponent,
+        canActivate: [authGuard],
+        title: 'Users | Boilerplate Manager',
+      },
+      {
+        path: 'roles',
+        component: RolesComponent,
+        canActivate: [authGuard],
+        title: 'Roles & Permissions | Boilerplate Manager',
       },
       {
         path: 'projects',
         component: ProjectsListComponent,
-        canActivate: [authGuard, roleGuard],
-        data: { permission: 'projects.read' },
-        title: 'Projects | TailAdmin SaaS Starter',
+        canActivate: [authGuard],
+        title: 'Projects | Boilerplate Manager',
       },
       {
-        path: 'projects/create',
+        path: 'projects/new',
         component: ProjectsCreateComponent,
-        canActivate: [authGuard, roleGuard],
-        data: { permission: 'projects.create' },
-        title: 'Create Project | TailAdmin SaaS Starter',
+        canActivate: [authGuard],
+        title: 'Create Project | Boilerplate Manager',
       },
       {
-        path: 'calendar',
-        component: CalenderComponent,
-        title: 'Angular Calender | TailAdmin - Angular Admin Dashboard Template'
+        path: 'projects/:id/edit',
+        component: ProjectsEditComponent,
+        canActivate: [authGuard],
+        title: 'Edit Project | Boilerplate Manager',
       },
-      {
-        path: 'profile',
-        component: ProfileComponent,
-        title: 'Angular Profile Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'form-elements',
-        component: FormElementsComponent,
-        title: 'Angular Form Elements Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'basic-tables',
-        component: BasicTablesComponent,
-        title: 'Angular Basic Tables Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'blank',
-        component: BlankComponent,
-        title: 'Angular Blank Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'invoice',
-        component: InvoicesComponent,
-        title: 'Angular Invoice Details Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'line-chart',
-        component: LineChartComponent,
-        title: 'Angular Line Chart Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'bar-chart',
-        component: BarChartComponent,
-        title: 'Angular Bar Chart Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'alerts',
-        component: AlertsComponent,
-        title: 'Angular Alerts Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'avatars',
-        component: AvatarElementComponent,
-        title: 'Angular Avatars Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'badge',
-        component: BadgesComponent,
-        title: 'Angular Badges Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'buttons',
-        component: ButtonsComponent,
-        title: 'Angular Buttons Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'images',
-        component: ImagesComponent,
-        title: 'Angular Images Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'videos',
-        component: VideosComponent,
-        title: 'Angular Videos Dashboard | TailAdmin - Angular Admin Dashboard Template'
-      },
-      {
-        path: 'examples/forms',
-        component: FormElementsComponent,
-        title: 'Examples - Form Elements | TailAdmin'
-      },
-      {
-        path: 'examples/tables',
-        component: BasicTablesComponent,
-        title: 'Examples - Tables | TailAdmin'
-      },
-    ]
+    ],
   },
+  // Novas rotas de auth (com publicGuard — redireciona para / se já autenticado)
+  {
+    path: 'auth/login',
+    component: LoginComponent,
+    canActivate: [publicGuard],
+    title: 'Login | Boilerplate Manager',
+  },
+  {
+    path: 'auth/forgot-password',
+    component: ForgotPasswordComponent,
+    canActivate: [publicGuard],
+    title: 'Recuperar Senha | Boilerplate Manager',
+  },
+  {
+    path: 'auth/reset-password',
+    component: ResetPasswordComponent,
+    title: 'Redefinir Senha | Boilerplate Manager',
+  },
+  // Rotas legadas — mantidas para backward compatibility
   {
     path: 'signin',
     component: SignInComponent,
-    title: 'Angular Sign In Dashboard | TailAdmin - Angular Admin Dashboard Template'
+    canActivate: [publicGuard],
+    title: 'Sign In | Boilerplate Manager',
   },
   {
     path: 'signup',
     component: SignUpComponent,
-    title: 'Angular Sign Up Dashboard | TailAdmin - Angular Admin Dashboard Template'
+    canActivate: [publicGuard],
+    title: 'Sign Up | Boilerplate Manager',
   },
   {
     path: '**',
     component: NotFoundComponent,
-    title: 'Angular NotFound Dashboard | TailAdmin - Angular Admin Dashboard Template'
+    title: 'Not Found | Boilerplate Manager',
   },
 ];

@@ -1,0 +1,109 @@
+import { CommonModule } from '@angular/common';
+import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '@core/auth/auth.service';
+
+@Component({
+  selector: 'app-reset-password',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule],
+  template: `
+    <div class="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
+      <div class="w-full max-w-md">
+        <div class="mb-8 text-center">
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Redefinir senha</h1>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Digite sua nova senha abaixo.
+          </p>
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          @if (error()) {
+            <div class="mb-4 rounded-lg border border-error-200 bg-error-50 p-3 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-300">
+              {{ error() }}
+            </div>
+          }
+
+          <form class="space-y-4" (ngSubmit)="onSubmit()">
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Nova senha</label>
+              <input
+                type="password"
+                [(ngModel)]="password"
+                name="password"
+                required
+                minlength="6"
+                placeholder="Mínimo 6 caracteres"
+                class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:placeholder:text-white/30"
+              />
+            </div>
+
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Confirmar nova senha</label>
+              <input
+                type="password"
+                [(ngModel)]="confirmPassword"
+                name="confirmPassword"
+                required
+                placeholder="Repita a nova senha"
+                class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:placeholder:text-white/30"
+              />
+            </div>
+
+            <button
+              type="submit"
+              [disabled]="loading() || !password || !confirmPassword"
+              class="flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              @if (loading()) {
+                <svg class="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                Salvando...
+              } @else {
+                Redefinir senha
+              }
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  `,
+})
+export class ResetPasswordComponent {
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
+  password = '';
+  confirmPassword = '';
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
+
+  async onSubmit(): Promise<void> {
+    if (this.password !== this.confirmPassword) {
+      this.error.set('As senhas não coincidem.');
+      return;
+    }
+
+    if (this.password.length < 6) {
+      this.error.set('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+
+    this.loading.set(true);
+    this.error.set(null);
+
+    const result = await this.authService.updatePassword(this.password);
+
+    if (result.error) {
+      this.error.set(result.error);
+      this.loading.set(false);
+      return;
+    }
+
+    this.loading.set(false);
+    await this.router.navigateByUrl('/');
+  }
+}

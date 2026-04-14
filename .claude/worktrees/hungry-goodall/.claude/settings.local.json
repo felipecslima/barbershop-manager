@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/felipelima/work/barbershop-manager/.claude/worktrees/hungry-goodall/admin/src/app/shared/components/ai -type f -name *.ts)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//Users/felipelima/work/barbershop-manager/.claude/worktrees/hungry-goodall/**)",
+      "Bash(done)",
+      "Bash(BASE=\"/Users/felipelima/work/barbershop-manager/.claude/worktrees/hungry-goodall/admin/src/app\" find \"$BASE/_archive\" -type f)",
+      "Bash(BASE=\"/Users/felipelima/work/barbershop-manager/.claude/worktrees/hungry-goodall/admin/src/app\" __NEW_LINE_67372c8f2c0480c0__ echo \"=== _archive structure ===\" find \"$BASE/_archive\" -type d)"
+    ]
+  }
+}

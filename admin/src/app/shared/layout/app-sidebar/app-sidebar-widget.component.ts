@@ -1,26 +1,51 @@
-import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import { OrganizationService } from '../../../core/services/organization.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { RbacService } from '../../../core/services/rbac.service';
 
 @Component({
   selector: 'app-sidebar-widget',
+  standalone: true,
+  imports: [CommonModule],
   template: `
-    <div
-      class="mx-auto mb-10 w-full max-w-60 rounded-2xl bg-gray-50 px-4 py-5 text-center dark:bg-white/[0.03]"
-    >
-      <h3 class="mb-2 font-semibold text-gray-900 dark:text-white">
-        #1 Tailwind CSS Dashboard
-      </h3>
-      <p class="mb-4 text-gray-500 text-theme-sm dark:text-gray-400">
-        Leading Tailwind CSS Admin Template with 500+ UI Component and Pages.
-      </p>
-      <a
-        href="https://tailadmin.com/pricing"
-        target="_blank"
-        rel="nofollow"
-        class="flex items-center justify-center p-3 font-medium text-white rounded-lg bg-brand-500 text-theme-sm hover:bg-brand-600"
-      >
-        Purchase Plan
-      </a>
-    </div>
-  `
+    @if (organizations().length > 0) {
+      <div class="mx-auto mb-6 w-full max-w-60 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-800 dark:bg-white/[0.03]">
+        <p class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          Organização
+        </p>
+        <p class="mb-3 truncate text-sm font-medium text-gray-800 dark:text-white">
+          {{ currentOrganization()?.name ?? '—' }}
+        </p>
+
+        @if (organizations().length > 1) {
+          <select
+            class="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+            [value]="currentOrganization()?.id ?? ''"
+            (change)="switchOrg($any($event.target).value)"
+          >
+            @for (org of organizations(); track org.id) {
+              <option [value]="org.id">{{ org.name }}</option>
+            }
+          </select>
+        }
+      </div>
+    }
+  `,
 })
-export class SidebarWidgetComponent {} 
+export class SidebarWidgetComponent {
+  private readonly organizationService = inject(OrganizationService);
+  private readonly authService = inject(AuthService);
+  private readonly rbacService = inject(RbacService);
+
+  readonly organizations = this.organizationService.organizations;
+  readonly currentOrganization = this.organizationService.currentOrganization;
+
+  async switchOrg(organizationId: string): Promise<void> {
+    this.organizationService.setCurrentOrganization(organizationId);
+    const userId = this.authService.user()?.id;
+    if (userId && organizationId) {
+      await this.rbacService.loadForOrganization(userId, organizationId);
+    }
+  }
+}
